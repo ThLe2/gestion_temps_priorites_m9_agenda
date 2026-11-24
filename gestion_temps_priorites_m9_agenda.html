@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agenda · Le tournage de « L'Ombre du Temps »</title>
+<style>
+:root{--fonce:#5E1349;--prune:#8C1E70;--clair:#F4E6EE;--rose:#C77BAA;--trame:#E8DCE5;--fond:#FAF6F8;--texte:#3C3C3C;--gris:#8A7A85;--ok:#2E7D4F;--ko:#B3261E;--bleu:#2F6DB3;--vert:#3C8D5A;--orange:#C77700}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--texte);background:var(--fond);font-size:15px;line-height:1.45}
+header{background:var(--fonce);color:#fff;padding:16px 22px}header .k{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#EAD3E3;font-weight:700}header h1{margin:4px 0 0;font-size:22px}
+main{max-width:1180px;margin:0 auto;padding:16px}
+.contexte{background:#fff;border-left:5px solid var(--prune);padding:12px 16px;margin-bottom:14px}
+.contexte h2{margin:0 0 6px;font-size:17px;color:var(--fonce)}.contexte ul{margin:6px 0 0;padding-left:20px}
+.etapes{display:flex;gap:8px;margin:0 0 12px;flex-wrap:wrap}.etapes span{padding:6px 12px;border-radius:16px;background:#fff;border:1px solid var(--trame);font-size:13px;color:var(--gris)}
+.etapes span.on{background:var(--prune);color:#fff;border-color:var(--prune)}.etapes span.fait{background:var(--clair);color:var(--fonce)}
+.grille{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
+@media(max-width:860px){.grille{grid-template-columns:1fr}}
+.panneau{background:#fff;border:1px solid var(--trame);border-radius:8px;padding:12px}
+.panneau h3{margin:0 0 10px;font-size:16px;color:var(--fonce)}
+.tache{border:1px solid var(--trame);border-radius:8px;padding:10px;margin-bottom:8px;background:#fff}
+.tache.placee{border-color:var(--prune);background:var(--clair)}.tache.fixe{background:#f3f0f2}
+.tache .nom{font-weight:700;color:var(--fonce)}.tache .nom input{width:100%;padding:6px;border:1px solid var(--trame);border-radius:4px;font:inherit}
+.ligne{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px;font-size:14px}
+select,button,input[type=text]{font:inherit}select{padding:5px;border:1px solid #cdbfc8;border-radius:4px;background:#fff}
+button{cursor:pointer;border:0;border-radius:6px;padding:7px 13px;background:var(--prune);color:#fff}
+button.sec{background:#fff;color:var(--prune);border:1px solid var(--prune)}button:disabled,select:disabled,input:disabled{opacity:.55;cursor:not-allowed}
+.badge{font-size:12px;padding:2px 8px;border-radius:10px;background:var(--trame);color:var(--fonce)}
+.prio{font-size:13px;color:var(--fonce)}
+.jour{position:relative;margin-left:52px;border-left:2px solid var(--trame)}
+.h{position:absolute;left:-52px;width:calc(100% + 52px);border-top:1px solid var(--trame);font-size:12px;color:var(--gris)}
+.h span{position:relative;top:-8px;background:#fff;padding-right:4px}
+.ev{position:absolute;left:6px;right:6px;border-radius:6px;padding:3px 8px;font-size:12.5px;color:#fff;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.ev b{display:block;font-size:13px}.ev.c-tache{background:var(--prune)}.ev.c-casting{background:var(--bleu)}.ev.c-autre{background:var(--vert)}.ev.c-pause{background:#9a8c95}.ev.c-imprevu{background:var(--orange)}.ev.c-fixe{background:#7a6a74}
+.ev.chev{outline:3px solid var(--ko)}.ev .cloche{float:right}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+.verif{background:#fff;border:1px solid var(--trame);border-radius:8px;padding:12px 16px}
+.verif li{margin:5px 0;list-style:none;padding-left:4px}.verif ul{padding-left:0;margin:6px 0}
+.ok{color:var(--ok)}.ko{color:var(--ko)}
+.bilan{background:var(--clair);border:2px solid var(--prune);border-radius:8px;padding:12px 16px;margin-top:12px}
+.reporte{font-size:13px;color:var(--gris);margin-top:6px}
+footer{text-align:center;font-size:12px;color:var(--gris);padding:16px}
+</style>
+<script src="jspdf.umd.min.js"></script><script src="justif.js"></script></head>
+<body>
+<header><div class="k">Gestion du temps et des priorités · Module 9</div><h1>Agenda · Le tournage de « L'Ombre du Temps »</h1></header>
+<main>
+<div class="etapes" id="etapes"></div>
+<div class="contexte" id="contexte"></div>
+<div class="grille">
+  <div class="panneau"><h3 id="titreTaches">Vos tâches</h3><div id="taches"></div></div>
+  <div class="panneau"><h3 id="titreJour">Votre agenda</h3><div class="jour" id="jour"></div></div>
+</div>
+<div class="actions">
+  <button id="btnVerif">Vérifier mon planning</button>
+  <button class="sec" id="btnReset">Recommencer l'exercice</button>
+</div>
+<div id="retour"></div>
+</main>
+<footer>TMK Performances - N° Siret : 49841924100027 - Code NAF : 8559A</footer>
+<script>
+const SCEN = {"kicker": "Gestion du temps et des priorités · Module 9", "titre": "Agenda · Le tournage de « L'Ombre du Temps »", "fin": "Votre journée est lisible d'un coup d'œil : les couleurs distinguent les types d'activité et les rappels sécurisent les rendez-vous importants.", "etapes": [{"court": "Planifier la journée", "titre": "Vous êtes réalisateur ou réalisatrice", "contexte": "<p>Vous tournez un film, « L'Ombre du Temps ». Saisissez la journée de vendredi dans l'agenda :</p><ul><li>9 h – 10 h : casting pour le rôle principal</li><li>10 h 15 – 11 h : casting pour un rôle secondaire</li><li>11 h 15 – 12 h : relire le script avec la scénariste</li><li>12 h – 13 h : pause déjeuner</li><li>13 h – 14 h : casting pour les figurants</li><li>14 h 15 – 15 h : appel au producteur pour un point budget</li><li>15 h 15 – 17 h : casting final pour un rôle clé</li></ul><p>Utilisez les couleurs : <b>bleu pour les castings</b>, <b>vert pour les autres tâches</b>, <b>gris pour la pause</b>. Activez un <b>rappel 10 minutes avant chaque casting</b>.</p>", "jour": ["09:00", "17:00"], "pas": 15, "echelle": 1.15, "couleurs": ["casting", "autre", "pause"], "rappels": true, "taches": [{"nom": "Casting rôle principal", "duree": 60, "durees": [45, 60, 105], "attendu": ["09:00", "10:00"], "coulAttendue": "casting"}, {"nom": "Casting rôle secondaire", "duree": 45, "durees": [45, 60, 105], "attendu": ["10:15", "11:00"], "coulAttendue": "casting"}, {"nom": "Relire le script avec la scénariste", "duree": 45, "durees": [45, 60, 105], "attendu": ["11:15", "12:00"], "coulAttendue": "autre"}, {"nom": "Pause déjeuner", "duree": 60, "durees": [45, 60, 105], "attendu": ["12:00", "13:00"], "coulAttendue": "pause"}, {"nom": "Casting figurants", "duree": 60, "durees": [45, 60, 105], "attendu": ["13:00", "14:00"], "coulAttendue": "casting"}, {"nom": "Appel au producteur (budget)", "duree": 45, "durees": [45, 60, 105], "attendu": ["14:15", "15:00"], "coulAttendue": "autre"}, {"nom": "Casting final rôle clé", "duree": 105, "durees": [45, 60, 105], "attendu": ["15:15", "17:00"], "coulAttendue": "casting"}], "regles": [{"type": "toutes", "ok": "Les sept événements sont placés."}, {"type": "horaires", "ok": "Les horaires sont exacts."}, {"type": "chevauchement", "ok": "Aucun chevauchement."}, {"type": "couleurs", "ok": "Les couleurs distinguent castings, autres tâches et pause."}, {"type": "rappels", "ok": "Un rappel est programmé avant chaque casting, et seulement avant eux."}], "bilan": "<b>Journée prête.</b> Regardez l'agenda : est-ce clair ? Les quinze minutes entre les castings vous laissent le temps de noter vos impressions ; sans elles, un casting qui déborde décalerait toute la journée."}]};
+const $ = s => document.querySelector(s);
+const hm = m => `${Math.floor(m/60)} h ${String(m%60).padStart(2,'0')}`;
+const p = s => { const [h,m] = s.split(':').map(Number); return h*60+m; };
+let etapeIdx = 0, T = [], valide = false;
+const COUL = {tache:'Tâche', casting:'Casting (bleu)', autre:'Autre tâche (vert)', pause:'Pause (gris)'};
+
+function charger(){
+  const E = SCEN.etapes[etapeIdx];
+  valide = false;
+  T = E.taches.map((t,i)=>({...t, id:i, debut: t.fixe ? p(t.fixe[0]) : null, duree: t.fixe ? p(t.fixe[1])-p(t.fixe[0]) : (t.duree||30),
+                           place: !!t.fixe, reporte:false, dureeInit: t.duree||30, coul: t.coul || (E.couleurs ? '' : 'tache'), rappel:false, prio:false, nomLibre: t.libre ? '' : null}));
+  $('#etapes').innerHTML = SCEN.etapes.map((e,i)=>`<span class="${i===etapeIdx?'on':(i<etapeIdx?'fait':'')}">${i+1}. ${e.court}</span>`).join('');
+  $('#contexte').innerHTML = `<h2>${E.titre}</h2>${E.contexte}`;
+  $('#retour').innerHTML = '';
+  $('#btnVerif').disabled = false; $('#btnVerif').textContent = 'Vérifier mon planning';
+  rendre();
+}
+function options(debut, fin, pas, sel){ let o=''; for(let m=debut;m<=fin;m+=pas) o+=`<option value="${m}" ${m===sel?'selected':''}>${hm(m)}</option>`; return o; }
+function rendre(){
+  const E = SCEN.etapes[etapeIdx], D=p(E.jour[0]), F=p(E.jour[1]), pas=E.pas||5;
+  $('#taches').innerHTML = T.map(t=>{
+    if(t.fixe) return `<div class="tache fixe"><div class="nom">${t.nom} <span class="badge">${t.etiquette||'déjà fixé'}</span></div><div class="reporte">${hm(t.debut)} – ${hm(t.debut+t.duree)}</div></div>`;
+    const durs = (t.durees||[10,15,20,30,45,60,75,90]).map(d=>`<option value="${d}" ${d===t.duree?'selected':''}>${d} min</option>`).join('');
+    return `<div class="tache ${t.place?'placee':''}" data-id="${t.id}">
+      <div class="nom">${t.libre ? `<input type="text" data-k="nomLibre" placeholder="${t.nom}" value="${t.nomLibre||''}" ${valide?'disabled':''}>` : t.nom}</div>
+      ${t.info?`<div class="reporte">${t.info}</div>`:''}
+      <div class="ligne">
+        <label>Début <select data-k="debut" ${valide||t.reporte?'disabled':''}><option value="">—</option>${options(D,F-5,pas,t.debut)}</select></label>
+        <label>Durée <select data-k="duree" ${valide||t.reporte||t.dureeFixe?'disabled':''}>${durs}</select></label>
+        ${E.couleurs?`<label>Couleur <select data-k="coul" ${valide?'disabled':''}><option value="">—</option>${E.couleurs.map(c=>`<option value="${c}" ${c===t.coul?'selected':''}>${COUL[c]}</option>`).join('')}</select></label>`:''}
+        ${E.rappels?`<label><input type="checkbox" data-k="rappel" ${t.rappel?'checked':''} ${valide?'disabled':''}> Rappel 10 min avant</label>`:''}
+      </div>
+      <div class="ligne">
+        <button data-a="placer" ${valide||t.reporte?'disabled':''}>${t.place?'Mettre à jour':'Placer dans l\'agenda'}</button>
+        ${t.place?`<button class="sec" data-a="retirer" ${valide?'disabled':''}>Retirer</button>`:''}
+        ${E.report?`<button class="sec" data-a="reporter" ${valide?'disabled':''}>${t.reporte?'Annuler le report':'Reporter à l\'après-midi'}</button>`:''}
+        ${E.prioritaire?`<label class="prio"><input type="radio" name="prio" data-k="prio" ${t.prio?'checked':''} ${valide?'disabled':''}> Tâche la plus importante</label>`:''}
+      </div>${t.reporte?'<div class="reporte">Reportée à l\'après-midi : elle ne figure plus dans la matinée.</div>':''}</div>`;
+  }).join('') + (E.ajout && !valide ? `<button class="sec" id="btnAjout">+ Ajouter une tâche</button>` : '');
+  // agenda
+  const ech = E.echelle || 2, H = (F-D)*ech;
+  let h = '';
+  for(let m=D;m<=F;m+=30) h += `<div class="h" style="top:${(m-D)*ech}px"><span>${m%60===0?hm(m):''}</span></div>`;
+  const pl = T.filter(t=>t.place && !t.reporte);
+  pl.forEach(t=>{
+    const chev = pl.some(u=>u!==t && u.debut < t.debut+t.duree && t.debut < u.debut+u.duree);
+    const c = t.fixe ? (t.coul||'fixe') : (t.coul||'tache');
+    h += `<div class="ev c-${c} ${chev?'chev':''}" style="top:${(t.debut-D)*ech}px;height:${Math.max(t.duree*ech-2,16)}px">${t.rappel?'<span class="cloche">🔔</span>':''}<b>${hm(t.debut)} – ${hm(t.debut+t.duree)}</b>${t.nomLibre||t.nom}</div>`;
+  });
+  $('#jour').style.height = H+'px'; $('#jour').innerHTML = h;
+  // évènements
+  document.querySelectorAll('.tache[data-id]').forEach(div=>{
+    const t = T[+div.dataset.id];
+    div.querySelectorAll('[data-k]').forEach(inp=>inp.onchange=()=>{
+      const k=inp.dataset.k;
+      if(k==='prio'){ T.forEach(u=>u.prio=false); t.prio=true; }
+      else if(k==='rappel') t.rappel=inp.checked;
+      else if(k==='nomLibre') t.nomLibre=inp.value.trim();
+      else if(k==='coul') t.coul=inp.value;
+      else t[k] = inp.value==='' ? null : +inp.value;
+      if(k!=='nomLibre') rendre();
+    });
+    div.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{
+      const a=b.dataset.a;
+      if(a==='placer'){ if(t.debut==null){alert('Choisissez une heure de début.');return;} if(t.libre && !t.nomLibre){alert('Donnez un nom à cette tâche.');return;} t.place=true; }
+      if(a==='retirer') t.place=false;
+      if(a==='reporter'){ t.reporte=!t.reporte; if(t.reporte) t.place=false; }
+      rendre();
+    });
+  });
+  const ba=$('#btnAjout'); if(ba) ba.onclick=()=>{ T.push({nom:'Nouvelle tâche (à nommer)', id:T.length, libre:true, nomLibre:'', duree:30, debut:null, place:false}); rendre(); };
+}
+function verifier(){JUSTIF.essais++;
+  const E = SCEN.etapes[etapeIdx];
+  const res = E.regles.map(r=>{ const v = REGLES[r.type](r, E); return {ok:v===true, txt: v===true ? r.ok : (typeof v==='string'? v : r.ko)}; });
+  const tout = res.every(r=>r.ok);
+  let h = `<div class="verif"><b>Vérification</b><ul>${res.map(r=>`<li class="${r.ok?'ok':'ko'}">${r.ok?'✔':'✘'} ${r.txt}</li>`).join('')}</ul></div>`;
+  if(tout){
+    valide = true; rendre();
+    $('#btnVerif').disabled = true; $('#btnVerif').textContent = 'Atelier validé';
+    h += `<div class="bilan">${E.bilan}</div>`;
+    if(etapeIdx < SCEN.etapes.length-1) h += `<div class="actions"><button id="btnSuite">Passer à l'étape suivante</button></div>`;
+    else h += `<div class="bilan"><b>Exercice terminé.</b> ${SCEN.fin||''}</div>`;
+  } else h += `<p class="ko">Corrigez les points signalés, puis vérifiez à nouveau.</p>`;
+  $('#retour').innerHTML = h;
+  if(tout){ const lg=T.filter(t=>t.place&&!t.reporte).sort((a,b)=>a.debut-b.debut).map(t=>`${hm(t.debut)} - ${hm(t.debut+t.duree)} : ${nomDe(t)} (${t.duree} min)${t.coul&&E.couleurs?' - couleur '+t.coul:''}${t.rappel?' - rappel':''}${t.prio?' - tâche la plus importante':''}${t.fixe?' - imposé':''}`);
+    T.filter(t=>t.reporte).forEach(t=>lg.push('Reporté à l\'après-midi : '+nomDe(t)));
+    JUSTIF.sections.push({titre:(SCEN.etapes.length>1?'Étape '+(etapeIdx+1)+' - ':'')+(E.titre||E.court||'Planning'),lignes:['Planning validé :',...lg],commentaires:res.map(r=>({ok:r.ok,txt:r.txt})),bilan:E.bilan});
+    if(etapeIdx===SCEN.etapes.length-1) JUSTIF.bouton('#retour'); }
+  const s=$('#btnSuite'); if(s) s.onclick=()=>{ etapeIdx++; charger(); window.scrollTo(0,0); };
+}
+const plac = () => T.filter(t=>t.place && !t.reporte);
+const nomDe = t => t.nomLibre || t.nom;
+const REGLES = {
+  toutes: (r)=>{ const m=T.filter(t=>!t.fixe && !t.libre && !t.reporte && !t.place && !(t.optionnel)); return m.length? `Tâches non placées : ${m.map(nomDe).join(', ')}.` : true; },
+  nbMin: (r)=> plac().filter(t=>!t.fixe).length >= r.n || `Il faut au moins ${r.n} tâches dans votre planning (vous en avez ${plac().filter(t=>!t.fixe).length}).`,
+  chevauchement: ()=>{ const pl=plac(); for(const a of pl) for(const b of pl) if(a!==b && a.debut<b.debut+b.duree && b.debut<a.debut+a.duree) return `« ${nomDe(a)} » et « ${nomDe(b)} » se chevauchent.`; return true; },
+  bornes: (r,E)=>{ const D=p(E.jour[0]),F=p(r.fin||E.jour[1]); const h=plac().find(t=>t.debut<D||t.debut+t.duree>F); return h? `« ${nomDe(h)} » dépasse ${hm(F)}.` : true; },
+  marge: (r,E)=>{ const D=p(r.de||E.jour[0]),F=p(r.a||E.jour[1]); const occ=plac().reduce((a,t)=>a+Math.max(0,Math.min(F,t.debut+t.duree)-Math.max(D,t.debut)),0); const libre=(F-D)-occ; return libre>=r.min || `Vous n'avez que ${libre} min de marge libre ; prévoyez au moins ${r.min} min.`; },
+  margeEntre: (r)=>{ const pl=plac().sort((a,b)=>a.debut-b.debut); for(let i=1;i<pl.length;i++){ if(pl[i].debut-(pl[i-1].debut+pl[i-1].duree)>=r.min) return true; } return r.ko; },
+  prioPremiere: ()=>{ const pr=T.find(t=>t.prio); if(!pr) return 'Indiquez votre tâche la plus importante.'; if(!pr.place) return 'Votre tâche la plus importante n\'est pas placée.'; const premier=plac().filter(t=>!t.fixe).sort((a,b)=>a.debut-b.debut)[0]; return premier===pr || `La tâche la plus importante (« ${nomDe(pr)} ») doit être placée en premier.`; },
+  dureesRealistes: (r)=>{ const h=plac().find(t=>!t.fixe && (t.duree<r.min||t.duree>r.max)); return h? `La durée de « ${nomDe(h)} » (${h.duree} min) paraît peu réaliste : entre ${r.min} et ${r.max} min.` : true; },
+  tacheEntiere: (r)=>{ const t=T.find(x=>x.cle===r.cle); if(!t.place||t.reporte) return `« ${t.nom} » doit rester dans la matinée.`; if(t.duree<r.duree) return `« ${t.nom} » ne doit pas être raccourcie (${r.duree} min).`; return true; },
+  apres: (r)=>{ const h=plac().find(t=>!t.fixe && t.debut<p(r.heure)); return h? `« ${nomDe(h)} » commence avant ${r.heure.replace(':',' h ')} : à ce moment-là, vous traitez l'imprévu.` : true; },
+  auMoinsUnAjustement: ()=> T.some(t=>!t.fixe && (t.reporte || (t.dureeInit && t.duree<t.dureeInit))) || 'Tout ne tient pas : reportez ou raccourcissez au moins une tâche.',
+  pauseGardee: (r)=>{ const t=T.find(x=>x.cle==='pause'); return (t && t.place && t.duree>=r.min) || `Gardez une pause d'au moins ${r.min} min.`; },
+  horaires: (r)=>{ const faux=T.filter(t=>t.attendu && (!t.place || t.debut!==p(t.attendu[0]) || t.debut+t.duree!==p(t.attendu[1]))); return faux.length? `Horaires à revoir : ${faux.map(t=>t.nom).join(', ')}.` : true; },
+  couleurs: ()=>{ const faux=T.filter(t=>t.coulAttendue && t.coul!==t.coulAttendue); return faux.length? `Couleur à revoir : ${faux.map(t=>t.nom).join(', ')} (castings en bleu, autres tâches en vert, pause en gris).` : true; },
+  rappels: ()=>{ const faux=T.filter(t=>t.coulAttendue==='casting' && !t.rappel); const trop=T.filter(t=>t.coulAttendue!=='casting' && t.rappel); return faux.length? `Rappel manquant : ${faux.map(t=>t.nom).join(', ')}.` : trop.length? `Rappel inutile : ${trop.map(t=>t.nom).join(', ')} (seuls les castings en ont besoin).` : true; },
+};
+$('#btnVerif').onclick = verifier;
+$('#btnReset').onclick = ()=>{ if(confirm('Recommencer tout l\'exercice ? Vos réponses seront effacées.')){ etapeIdx=0; JUSTIF.vider(); charger(); } };
+charger();
+</script>
+</body>
+</html>
